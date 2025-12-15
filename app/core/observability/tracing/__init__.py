@@ -1,0 +1,18 @@
+"""
+Módulo de distributed tracing com OpenTelemetry
+"""
+from app.core.observability.tracing.trace_manager import (
+    setup_tracing,
+    get_tracer,
+    instrument_fastapi,
+    instrument_sqlalchemy,
+    TRACING_AVAILABLE
+)
+
+__all__ = [
+    "setup_tracing",
+    "get_tracer",
+    "instrument_fastapi",
+    "instrument_sqlalchemy",
+    "TRACING_AVAILABLE",
+]
