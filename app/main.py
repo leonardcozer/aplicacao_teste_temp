@@ -15,11 +15,10 @@ from fastapi import FastAPI
 sys.path.insert(0, str(__file__).rsplit('/', 1)[0])
 
 from app.core.config import settings
-from app.core.database import db
 from app.core.http import create_server, configure_middlewares, configure_cors
 from app.core.observability.logger import LOGGER_MAIN, configure_logging, shutdown_loki_handler
 from app.core.observability.tracing import setup_tracing, instrument_fastapi, instrument_sqlalchemy
-from app.modules.Cadastro import router as cadastro_router
+from app.modules.customer import router as customer_maintenance
 from app.core.exception_handlers import register_exception_handlers
 
 # Importa métricas do Prometheus (com tratamento de erro)
@@ -239,7 +238,7 @@ def create_app() -> FastAPI:
     logger.info("✅ Rota /metrics registrada")
     
     # Registra as rotas dos módulos
-    app.include_router(cadastro_router)
+    app.include_router(customer_maintenance)
     
     # Log de debug: lista todas as rotas registradas
     routes_list = [route.path for route in app.routes if hasattr(route, 'path')]
