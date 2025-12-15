@@ -3,7 +3,14 @@ from typing import Generator
 
 from fastapi import APIRouter, Depends, Query, HTTPException
 
-from app.modules.customer.schemas import ProdutoCreateRequest, ProdutoUpdateRequest, ProdutoResponse, ProdutoListResponse
+from app.modules.customer.schemas import (
+    ProdutoCreateRequest, 
+    ProdutoUpdateRequest, 
+    ProdutoResponse, 
+    ProdutoListResponse,
+    DirectoryRequest,
+    DirectoryResponse
+)
 from app.modules.customer.service import ProdutoService
 from app.core.exceptions import NotFoundError, BadRequestError
 from app.core.validators import (
@@ -16,7 +23,7 @@ from app.core.validators import (
 logger = logging.getLogger("api")
 
 
-router = APIRouter(prefix="/produtos", tags=["customer maintenance"])
+router = APIRouter(prefix="/api", tags=["customer maintenance"])
 
 
 def get_produto_service() -> ProdutoService:
@@ -61,4 +68,78 @@ async def criar_produto(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Erro ao criar produto: {str(e)}")
+        raise HTTPException(status_code=500, detail="Erro interno do servidor")
+
+
+@router.post(
+    "/new_directory",
+    response_model=DirectoryResponse,
+    status_code=201,
+    summary="Criar novo diretório",
+    responses={
+        201: {"description": "Diretório criado com sucesso"},
+        400: {"description": "Dados inválidos"},
+    }
+)
+async def new_directory(request: DirectoryRequest):
+    """
+    Cria um novo diretório para o cliente
+    
+    - **codigo_cliente**: Código do cliente (obrigatório)
+    - **servidor_destino**: Servidor de destino (obrigatório)
+    - **disco_destino**: Disco de destino (obrigatório)
+    """
+    try:
+        logger.info(f"Criando diretório para cliente {request.codigo_cliente}")
+        
+        # TODO: Implementar lógica de criação de diretório
+        # Por enquanto retorna resposta de sucesso
+        return DirectoryResponse(
+            message="Diretorio criado com sucesso",
+            status_code=201,
+            data={
+                "Servidor": request.servidor_destino,
+                "Disco": request.disco_destino,
+                "Codigo": request.codigo_cliente
+            }
+        )
+    except Exception as e:
+        logger.error(f"Erro ao criar diretório: {str(e)}")
+        raise HTTPException(status_code=500, detail="Erro interno do servidor")
+
+
+@router.post(
+    "/permission",
+    response_model=DirectoryResponse,
+    status_code=201,
+    summary="Aplicar permissões",
+    responses={
+        201: {"description": "Permissões aplicadas com sucesso"},
+        400: {"description": "Dados inválidos"},
+    }
+)
+async def permission(request: DirectoryRequest):
+    """
+    Aplica permissões no diretório do cliente
+    
+    - **codigo_cliente**: Código do cliente (obrigatório)
+    - **servidor_destino**: Servidor de destino (obrigatório)
+    - **disco_destino**: Disco de destino (obrigatório)
+    """
+    try:
+        logger.info(f"Aplicando permissões para cliente {request.codigo_cliente}")
+        
+        # TODO: Implementar lógica de aplicação de permissões
+        # Por enquanto retorna resposta de sucesso
+        return DirectoryResponse(
+            message="Diretorio criado com sucesso",
+            status_code=201,
+            data={
+                "Servidor": request.servidor_destino,
+                "Disco": request.disco_destino,
+                "Codigo": request.codigo_cliente
+            }
+        )
+    except Exception as e:
+        logger.error(f"Erro ao aplicar permissões: {str(e)}")
         raise HTTPException(status_code=500, detail="Erro interno do servidor")

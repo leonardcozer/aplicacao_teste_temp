@@ -85,3 +85,38 @@ class ProdutoListResponse(BaseModel):
             }
         }
 
+
+class DirectoryRequest(BaseModel):
+    """DTO para requisição de criação de diretório ou permissão"""
+    codigo_cliente: str = Field(..., description="Código do cliente")
+    servidor_destino: str = Field(..., description="Servidor de destino")
+    disco_destino: str = Field(..., description="Disco de destino")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "codigo_cliente": "100817",
+                "servidor_destino": "cmaticfspg15",
+                "disco_destino": "Contmatic2"
+            }
+        }
+
+
+class DirectoryResponse(BaseModel):
+    """DTO para resposta de criação de diretório ou permissão"""
+    message: str
+    status_code: int
+    data: dict
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "message": "Diretorio criado com sucesso",
+                "status_code": 201,
+                "data": {
+                    "Servidor": "cmaticfspg15",
+                    "Disco": "Contmatic2",
+                    "Codigo": "100817"
+                }
+            }
+        }
