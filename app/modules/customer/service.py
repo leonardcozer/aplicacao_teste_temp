@@ -1,5 +1,4 @@
 import logging
-from sqlalchemy.orm import Session
 from typing import Optional
 
 from app.modules.customer.schemas import ProdutoCreateRequest, ProdutoUpdateRequest, ProdutoResponse, ProdutoListResponse

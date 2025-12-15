@@ -3,27 +3,6 @@ from typing import List
 from pydantic_settings import BaseSettings
 
 
-class DatabaseConfig(BaseSettings):
-    driver: str = "postgresql"
-    user: str = os.getenv("DATABASE_USER", "postgres")
-    password: str = os.getenv("DATABASE_PASSWORD", "")
-    host: str = os.getenv("DATABASE_HOST", "localhost")
-    port: int = int(os.getenv("DATABASE_PORT", "5432"))
-    name: str = os.getenv("DATABASE_NAME", "produto_db")
-    pool_size: int = int(os.getenv("DATABASE_POOL_SIZE", "20"))
-    max_overflow: int = int(os.getenv("DATABASE_MAX_OVERFLOW", "40"))
-    
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        # Validação: senha não pode ser vazia em produção
-        if not self.password and os.getenv("ENVIRONMENT", "development") != "development":
-            raise ValueError("DATABASE_PASSWORD é obrigatória em produção")
-
-    @property
-    def database_url(self) -> str:
-        return f"{self.driver}+psycopg2://{self.user}:{self.password}@{self.host}:{self.port}/{self.name}"
-
-
 class CORSConfig(BaseSettings):
     allow_origins: List[str] = os.getenv(
         "CORS_ORIGINS",
@@ -63,7 +42,6 @@ class TempoConfig(BaseSettings):
 
 
 class Settings(BaseSettings):
-    database: DatabaseConfig = DatabaseConfig()
     server: ServerConfig = ServerConfig()
     cors: CORSConfig = CORSConfig()
     loki: LokiConfig = LokiConfig()

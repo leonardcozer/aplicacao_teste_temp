@@ -17,7 +17,7 @@ sys.path.insert(0, str(__file__).rsplit('/', 1)[0])
 from app.core.config import settings
 from app.core.http import create_server, configure_middlewares, configure_cors
 from app.core.observability.logger import LOGGER_MAIN, configure_logging, shutdown_loki_handler
-from app.core.observability.tracing import setup_tracing, instrument_fastapi, instrument_sqlalchemy
+from app.core.observability.tracing import setup_tracing, instrument_fastapi
 from app.modules.customer.router import router as customer_maintenance
 from app.core.exception_handlers import register_exception_handlers
 
@@ -106,38 +106,13 @@ async def lifespan(app: FastAPI):
             root_logger._ensure_uvicorn_loggers_configured()
             logger.info("✅ Loggers do Uvicorn configurados para Grafana/Loki")
     
-    try:
-        db.init()
-        db.create_tables()
-        logger.info("✅ Banco de dados inicializado com sucesso")
-        
-        # Registra dependência do banco de dados no service map
-        if METRICS_AVAILABLE:
-            try:
-                set_service_dependency(
-                    source_service="produto-api",
-                    target_service="postgresql",
-                    dependency_type="database",
-                    active=True
-                )
-                set_service_health("produto-api", "readiness", True)
-                set_service_health("produto-api", "liveness", True)
-            except Exception as e:
-                logger.warning(f"⚠️ Erro ao registrar métricas de service map: {str(e)}")
-    except Exception as e:
-        logger.error(f"❌ Erro ao inicializar banco de dados: {str(e)}")
-        if METRICS_AVAILABLE:
-            try:
-                set_service_health("produto-api", "readiness", False)
-                set_service_dependency(
-                    source_service="produto-api",
-                    target_service="postgresql",
-                    dependency_type="database",
-                    active=False
-                )
-            except:
-                pass
-        raise
+    # Configura métricas de saúde do serviço
+    if METRICS_AVAILABLE:
+        try:
+            set_service_health("produto-api", "readiness", True)
+            set_service_health("produto-api", "liveness", True)
+        except Exception as e:
+            logger.warning(f"⚠️ Erro ao registrar métricas de service map: {str(e)}")
 
     yield
 
@@ -151,13 +126,6 @@ async def lifespan(app: FastAPI):
             logger.info("✅ Loki handler encerrado com sucesso")
         except Exception as e:
             logger.error(f"❌ Erro ao encerrar Loki handler: {str(e)}")
-    
-    # Fecha conexão com banco de dados
-    try:
-        db.close()
-        logger.info("✅ Conexão com banco de dados fechada")
-    except Exception as e:
-        logger.error(f"❌ Erro ao fechar banco de dados: {str(e)}")
     
     logger.info("✅ Aplicação encerrada com sucesso")
 
@@ -178,9 +146,6 @@ def create_app() -> FastAPI:
                 service_name="produto-api",
                 enabled=settings.tempo.enabled
             )
-            if tempo_connected:
-                # Instrumenta SQLAlchemy para tracing de queries
-                instrument_sqlalchemy()
         except Exception as e:
             logger.error(f"❌ Erro ao configurar Tempo: {str(e)}")
     
@@ -270,37 +235,12 @@ def create_app() -> FastAPI:
     async def readiness_check():
         """
         Endpoint para verificar se a aplicação está pronta.
-        Verifica conexão com banco de dados e outras dependências críticas.
+        Verifica dependências críticas da aplicação.
         """
         checks = {
-            "database": False,
             "loki": False,
             "status": "unhealthy"
         }
-        
-        # Verifica conexão com banco de dados
-        try:
-            checks["database"] = db.check_connection()
-            # Atualiza métricas de service map
-            if METRICS_AVAILABLE:
-                try:
-                    set_service_health("produto-api", "readiness", checks["database"])
-                    set_service_dependency(
-                        source_service="produto-api",
-                        target_service="postgresql",
-                        dependency_type="database",
-                        active=checks["database"]
-                    )
-                except:
-                    pass
-        except Exception as e:
-            logger.error(f"Database health check failed: {str(e)}")
-            checks["database"] = False
-            if METRICS_AVAILABLE:
-                try:
-                    set_service_health("produto-api", "readiness", False)
-                except:
-                    pass
         
         # Verifica status do Loki (se habilitado)
         if loki_connected:
@@ -309,19 +249,8 @@ def create_app() -> FastAPI:
             checks["loki"] = True  # Não é crítico se desabilitado
         
         # Determina status geral
-        if checks["database"]:
-            checks["status"] = "ready"
-            status_code = 200
-        else:
-            checks["status"] = "not_ready"
-            status_code = 503
-        
-        # Adiciona informações do pool
-        try:
-            pool_status = db.get_pool_status()
-            checks["database_pool"] = pool_status
-        except Exception:
-            pass
+        checks["status"] = "ready"
+        status_code = 200
         
         from fastapi.responses import JSONResponse
         return JSONResponse(
