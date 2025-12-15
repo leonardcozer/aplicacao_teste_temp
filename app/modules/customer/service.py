@@ -1,8 +1,8 @@
 import logging
 from sqlalchemy.orm import Session
+from typing import Optional
 
-from app.modules.Cadastro.produto.repository import ProdutoRepository
-from app.modules.Cadastro.produto.schemas import ProdutoCreateRequest, ProdutoUpdateRequest, ProdutoResponse, ProdutoListResponse
+from app.modules.customer.schemas import ProdutoCreateRequest, ProdutoUpdateRequest, ProdutoResponse, ProdutoListResponse
 from app.core.exceptions import NotFoundError, BadRequestError
 try:
     from app.core.observability.tracing import get_tracer
@@ -25,7 +25,13 @@ except ImportError:
 class ProdutoService:
     """Service contém a lógica de negócio relacionada a Produtos"""
 
-    def __init__(self, repository: ProdutoRepository):
+    def __init__(self, repository: Optional[object] = None):
+        """
+        Inicializa o service
+        
+        Args:
+            repository: Repository para acesso aos dados (opcional por enquanto)
+        """
         self.repository = repository
 
     def criar_produto(self, produto_request: ProdutoCreateRequest) -> ProdutoResponse:
@@ -54,6 +60,10 @@ class ProdutoService:
                     span.set_status(trace.Status(trace.StatusCode.ERROR, "Quantidade inválida"))
                 raise BadRequestError("A quantidade não pode ser negativa")
 
+            # TODO: Implementar quando repository estiver disponível
+            if self.repository is None:
+                raise NotImplementedError("Repository não configurado. Implemente o repository para criar produtos.")
+            
             produto_data = produto_request.model_dump()
             produto = self.repository.create(produto_data)
             logger.info(f"Produto criado via service: {produto.id}")
@@ -75,6 +85,8 @@ class ProdutoService:
 
     def obter_produto(self, produto_id: int) -> ProdutoResponse:
         """Obtém um produto pelo ID"""
+        if self.repository is None:
+            raise NotImplementedError("Repository não configurado. Implemente o repository para obter produtos.")
         try:
             produto = self.repository.get_by_id(produto_id)
             return ProdutoResponse.model_validate(produto)
@@ -86,6 +98,8 @@ class ProdutoService:
 
     def listar_produtos(self, page: int = 1, page_size: int = 10) -> ProdutoListResponse:
         """Lista todos os produtos com paginação"""
+        if self.repository is None:
+            raise NotImplementedError("Repository não configurado. Implemente o repository para listar produtos.")
         try:
             if page < 1:
                 raise BadRequestError("O número da página deve ser maior que 0")
@@ -96,7 +110,7 @@ class ProdutoService:
             skip = (page - 1) * page_size
             produtos, total = self.repository.get_all(skip=skip, limit=page_size)
             
-            items = [ProdutoResponse.from_orm(p) for p in produtos]
+            items = [ProdutoResponse.model_validate(p) for p in produtos]
             return ProdutoListResponse(
                 total=total,
                 page=page,
@@ -109,6 +123,8 @@ class ProdutoService:
 
     def listar_por_categoria(self, categoria: str, page: int = 1, page_size: int = 10) -> ProdutoListResponse:
         """Lista produtos de uma categoria específica"""
+        if self.repository is None:
+            raise NotImplementedError("Repository não configurado. Implemente o repository para listar por categoria.")
         try:
             if page < 1:
                 raise BadRequestError("O número da página deve ser maior que 0")
@@ -119,7 +135,7 @@ class ProdutoService:
             skip = (page - 1) * page_size
             produtos, total = self.repository.get_by_categoria(categoria, skip=skip, limit=page_size)
             
-            items = [ProdutoResponse.from_orm(p) for p in produtos]
+            items = [ProdutoResponse.model_validate(p) for p in produtos]
             return ProdutoListResponse(
                 total=total,
                 page=page,
@@ -132,6 +148,8 @@ class ProdutoService:
 
     def buscar_produtos(self, termo: str, page: int = 1, page_size: int = 10) -> ProdutoListResponse:
         """Busca produtos por termo"""
+        if self.repository is None:
+            raise NotImplementedError("Repository não configurado. Implemente o repository para buscar produtos.")
         try:
             if not termo or len(termo.strip()) < 2:
                 raise BadRequestError("O termo de busca deve ter pelo menos 2 caracteres")
@@ -145,7 +163,7 @@ class ProdutoService:
             skip = (page - 1) * page_size
             produtos, total = self.repository.search(termo, skip=skip, limit=page_size)
             
-            items = [ProdutoResponse.from_orm(p) for p in produtos]
+            items = [ProdutoResponse.model_validate(p) for p in produtos]
             return ProdutoListResponse(
                 total=total,
                 page=page,
@@ -158,6 +176,8 @@ class ProdutoService:
 
     def atualizar_produto(self, produto_id: int, produto_request: ProdutoUpdateRequest) -> ProdutoResponse:
         """Atualiza um produto existente"""
+        if self.repository is None:
+            raise NotImplementedError("Repository não configurado. Implemente o repository para atualizar produtos.")
         try:
             # Validações de negócio
             if produto_request.preco is not None and produto_request.preco < 0.01:
@@ -176,6 +196,8 @@ class ProdutoService:
 
     def deletar_produto(self, produto_id: int) -> bool:
         """Deleta um produto"""
+        if self.repository is None:
+            raise NotImplementedError("Repository não configurado. Implemente o repository para deletar produtos.")
         try:
             sucesso = self.repository.delete(produto_id)
             logger.info(f"Produto deletado via service: {produto_id}")
