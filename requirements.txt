@@ -13,3 +13,4 @@ opentelemetry-sdk==1.21.0
 opentelemetry-instrumentation-fastapi==0.42b0
 opentelemetry-instrumentation-sqlalchemy==0.42b0
 opentelemetry-exporter-otlp-proto-grpc==1.21.0
+PyHamcrest==2.0.4

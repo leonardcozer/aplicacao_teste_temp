@@ -1,7 +1,6 @@
 import logging
 from typing import Generator
 
-from hamcrest import none
 from fastapi import APIRouter, Depends, Query, HTTPException
 
 from app.modules.customer.schemas import ProdutoCreateRequest, ProdutoUpdateRequest, ProdutoResponse, ProdutoListResponse
@@ -18,6 +17,16 @@ logger = logging.getLogger("api")
 
 
 router = APIRouter(prefix="/produtos", tags=["customer maintenance"])
+
+
+def get_produto_service() -> ProdutoService:
+    """
+    Dependency injection para ProdutoService
+    TODO: Implementar injeção de dependência adequada com repository
+    """
+    # Por enquanto retorna None - precisa ser implementado
+    # quando o repository estiver disponível
+    return None
 
 
 @router.post(
@@ -44,8 +53,9 @@ async def criar_produto(
     - **categoria**: Categoria do produto (obrigatório)
     """
     try:
-        return none
-        #service.criar_produto(produto_request)
+        if service is None:
+            raise HTTPException(status_code=503, detail="Serviço não disponível - repository não configurado")
+        return service.criar_produto(produto_request)
     except BadRequestError as e:
         logger.warning(f"Erro de validação ao criar produto: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
