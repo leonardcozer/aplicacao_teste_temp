@@ -18,7 +18,7 @@ from app.core.config import settings
 from app.core.http import create_server, configure_middlewares, configure_cors
 from app.core.observability.logger import LOGGER_MAIN, configure_logging, shutdown_loki_handler
 from app.core.observability.tracing import setup_tracing, instrument_fastapi, instrument_sqlalchemy
-from app.modules.customer import router as customer_maintenance
+from app.modules.customer.router import router as customer_maintenance
 from app.core.exception_handlers import register_exception_handlers
 
 # Importa métricas do Prometheus (com tratamento de erro)
